@@ -14,8 +14,8 @@ const P1: React.FC = () => {
         { id: 2, name: '2번 말뚝', status: '고장', color: 'yellow' },
         { id: 3, name: '3번 말뚝', status: '정상', color: 'lime' },
         { id: 4, name: '4번 말뚝', status: '꺼짐', color: 'red' },
-        { id: 5, name: '5번 말뚝', status: '정상', color: 'lime' },
-        { id: 6, name: '6번 말뚝', status: '고장', color: 'yellow' },
+        // { id: 5, name: '5번 말뚝', status: '정상', color: 'lime' },
+        // { id: 6, name: '6번 말뚝', status: '고장', color: 'yellow' },np
     ]);
 
     const [editId, setEditId] = useState<number | null>(null);
