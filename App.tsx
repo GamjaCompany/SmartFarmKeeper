@@ -1,11 +1,13 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
-import P1 from './src/screens/P1'; // P1 컴포넌트 경로를 적절히 설정하세요.
+import P1 from './src/screens/P1';
+import P2 from './src/screens/P2';
+import { GOOGLE_MAPS_API_KEY } from '@env';
 
 const App: React.FC = () => {
     return (
         <SafeAreaView style={styles.container}>
-            <P1 />
+            <P2 />
         </SafeAreaView>
     );
 };
