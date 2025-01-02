@@ -1,9 +1,24 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, PermissionsAndroid } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import ScarecrowInfoModal from '../components/ScarecrowInfoModal';
+
+interface Item {
+    id: number;
+    name: string;
+    status: string;
+}
 
 const P2: React.FC = () => {
-  
+    const [items, setItems] = useState<Item[]>([
+        { id: 1, name: '1번 말뚝', status: '정상' },
+        { id: 2, name: '2번 말뚝', status: '고장' },
+        { id: 3, name: '3번 말뚝', status: '고장' },
+        { id: 4, name: '4번 말뚝', status: '꺼짐' },
+    ]);
+
+    const [currentItemIndex, setCurrentItemIndex] = useState<number>(1);
+
     // 위치 권한 요청 함수
     const requestLocationPermission = async () => {
         if (Platform.OS === 'android') {
@@ -29,6 +44,18 @@ const P2: React.FC = () => {
         requestLocationPermission();
     }, []);
 
+    const handleArrowClick = (direction: 'left' | 'right') => {
+        setCurrentItemIndex((prevIndex) => {
+            if (direction === 'left') {
+                return prevIndex === 0 ? items.length - 1 : prevIndex - 1; // 첫 번째 항목에서 왼쪽 클릭 시 마지막 항목으로
+            } else {
+                return prevIndex === items.length - 1 ? 0 : prevIndex + 1; // 마지막 항목에서 오른쪽 클릭 시 첫 번째 항목으로
+            }
+        });
+    };
+
+    const currentItem = items[currentItemIndex]; // 현재 선택된 말뚝 아이템
+
     return (
         <View style={styles.container}>
             {/* 지도 영역 */}
@@ -40,41 +67,24 @@ const P2: React.FC = () => {
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
                 }}
-                onMapReady={() => console.log("Map is ready")}
+                onMapReady={() => console.log('Map is ready')}
             >
                 {/* 말뚝 마커 */}
-                <Marker
-                    coordinate={{ latitude: 37.5665, longitude: 126.9780 }}
-                    title="1번 말뚝"
-                />
-                <Marker
-                    coordinate={{ latitude: 37.5655, longitude: 126.9770 }}
-                    title="2번 말뚝"
-                />
+                {items.map((item) => (
+                    <Marker
+                        key={item.id}
+                        coordinate={{ latitude: 37.5665 + item.id * 0.001, longitude: 126.9780 + item.id * 0.001 }}
+                        title={item.name}
+                    />
+                ))}
             </MapView>
 
             {/* 하단 카드 영역 */}
-            <View style={styles.card}>
-                {/* 말뚝 정보 */}
-                <View style={styles.row}>
-                    <Text style={styles.title}>3번 말뚝</Text>
-                    <Text style={styles.battery}>🔋 92%</Text>
-                </View>
-                <View style={styles.row}>
-                    <Text style={styles.warning}>최근 탐지 시기 ⚠️</Text>
-                    <Text style={styles.time}>1시간 6분 전</Text>
-                </View>
-
-                {/* 화살표 버튼 */}
-                <View style={styles.buttons}>
-                    <TouchableOpacity style={styles.arrowButton}>
-                        <Text style={styles.arrowText}>←</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.arrowButton}>
-                        <Text style={styles.arrowText}>→</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+            <ScarecrowInfoModal
+                id={currentItem.id}
+                name={currentItem.name}
+                onArrowClick={handleArrowClick}
+            />
         </View>
     );
 };
@@ -85,54 +95,6 @@ const styles = StyleSheet.create({
     },
     map: {
         flex: 1,
-    },
-    card: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#FFA500', // 주황색 배경
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        padding: 20,
-    },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#000',
-    },
-    battery: {
-        fontSize: 16,
-        color: '#000',
-    },
-    warning: {
-        fontSize: 16,
-        color: '#FF0000', // 경고 텍스트 빨간색
-        fontWeight: 'bold',
-    },
-    time: {
-        fontSize: 16,
-        color: '#000',
-    },
-    buttons: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 10,
-    },
-    arrowButton: {
-        backgroundColor: '#FFD700', // 화살표 버튼 색
-        borderRadius: 10,
-        padding: 20,
-    },
-    arrowText: {
-        fontSize: 24,
-        fontWeight: 'bold',
     },
 });
 
