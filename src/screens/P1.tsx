@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Button } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ParamListBase } from '@react-navigation/native';
+import Scarecrow from '../components/Scarecrow';
 
 interface Item {
     id: number;
     name: string;
     status: string;
-    color: string;
 }
 
 interface StackParamList extends ParamListBase {
@@ -20,10 +20,10 @@ type P1ScreenNavigationProp = StackNavigationProp<StackParamList, 'P1'>;
 
 const P1: React.FC = () => {
     const [items, setItems] = useState<Item[]>([
-        { id: 1, name: '1번 말뚝', status: '정상', color: 'lime' },
-        { id: 2, name: '2번 말뚝', status: '고장', color: 'yellow' },
-        { id: 3, name: '3번 말뚝', status: '정상', color: 'lime' },
-        { id: 4, name: '4번 말뚝', status: '꺼짐', color: 'red' },
+        { id: 1, name: '1번 말뚝', status: '정상' },
+        { id: 2, name: '2번 말뚝', status: '고장' },
+        { id: 3, name: '3번 말뚝', status: '고장' },
+        { id: 4, name: '4번 말뚝', status: '꺼짐' },
     ]);
 
     const navigation = useNavigation<P1ScreenNavigationProp>();
@@ -32,18 +32,7 @@ const P1: React.FC = () => {
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollView}>
                 {items.map((item) => (
-                    <View key={item.id} style={styles.card}>
-                        <Text style={styles.cardTitle}>{item.name}</Text>
-                        <View style={styles.statusContainer}>
-                            <Text style={styles.statusText}>{item.status}</Text>
-                            <View
-                                style={[
-                                    styles.statusDot,
-                                    { backgroundColor: item.color },
-                                ]}
-                            />
-                        </View>
-                    </View>
+                    <Scarecrow key={item.id} id={item.id} name={item.name} status={item.status}/>
                 ))}
             </ScrollView>
             <TouchableOpacity style={styles.button} onPress={() => {

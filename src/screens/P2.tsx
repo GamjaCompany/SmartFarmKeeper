@@ -40,6 +40,7 @@ const P2: React.FC = () => {
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
                 }}
+                onMapReady={() => console.log("Map is ready")}
             >
                 {/* 말뚝 마커 */}
                 <Marker
