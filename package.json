@@ -10,9 +10,16 @@
     "test": "jest"
   },
   "dependencies": {
+    "buffer": "^6.0.3",
+    "mqtt": "^5.10.3",
     "react": "18.3.1",
-    "react-native": "0.76.5",
-    "react-native-linear-gradient": "^2.8.3"
+    "react-native": "^0.76.5",
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-svg": "^15.10.1",
+    "react-native-svg-transformer": "^1.5.0",
+    "react-native-tcp-socket": "^6.2.0",
+    "stream": "^0.0.3",
+    "url": "^0.11.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
