@@ -44,7 +44,7 @@ const P1: React.FC = () => {
                         console.error('Subscription error:', err);
                     }
                 });
-                client.subscribe('GET_Respone', (err) => {
+                client.subscribe('GET_Response', (err) => {
                     if (err) {
                         console.error('Subscription error:', err);
                     }
