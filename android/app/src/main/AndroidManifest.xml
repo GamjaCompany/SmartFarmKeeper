@@ -13,9 +13,10 @@
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
 
+        <!-- Google Maps API Key 참조 -->
         <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_api_key" />
+            android:name="com.google.android.maps.v2.API_KEY"
+            android:value="@string/google_maps_key"/>
 
         <activity
             android:name=".MainActivity"
