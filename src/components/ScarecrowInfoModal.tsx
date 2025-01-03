@@ -13,7 +13,7 @@ const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, onArrowCli
             {/* 말뚝 정보 */}
             <View style={styles.row}>
                 <Text style={styles.title}>{name}</Text>
-                <Text style={styles.battery}>🔋 92%</Text>  {/* server에서 get */}
+                <Text style={styles.battery}>🔋 92%</Text>{/* server에서 get */}
             </View>
             <View style={styles.row}>
                 <Text style={styles.warning}>최근 탐지 시기 ⚠️</Text>
