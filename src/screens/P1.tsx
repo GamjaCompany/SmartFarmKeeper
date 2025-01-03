@@ -85,7 +85,7 @@ const P1: React.FC = () => {
             console.error('useEffect Error:', error);
         }
     }, []);
-    
+   
 
     return (
         <View style={styles.container}>
@@ -165,19 +165,39 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     button: {
-        alignSelf: 'center',
         backgroundColor: '#000',
         paddingVertical: 15,
-        paddingHorizontal: 40,
+        paddingHorizontal: 30,
         borderWidth: 2,
         borderColor: '#fff',
         borderRadius: 20,
-        marginTop: 20,
     },
     buttonText: {
-        fontSize: 20,
+        fontSize: 18,
         color: '#fff',
         fontWeight: 'bold',
+    },
+    messageBox: {
+        flex: 1,
+        height: 40,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 10,
+        marginLeft: 10,
+        paddingHorizontal: 10,
+        fontSize: 16,
+        color: '#000',
+    },
+    receivedMessageContainer: {
+        marginTop: 20,
+    },
+    receivedMessageLabel: {
+        fontSize: 18,
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    receivedMessage: {
+        fontSize: 16,
+        color: '#fff',
     },
 });
 
