@@ -61,6 +61,10 @@ const P2: React.FC = () => {
         setCurrentModal("DetectionLog");
     };
 
+    const handleBackToScarecrowInfo = () => {
+        setCurrentModal("ScarecrowInfo");
+    };
+
     return (
         <View style={styles.container}>
             <MapView
@@ -99,6 +103,7 @@ const P2: React.FC = () => {
                             image: "https://example.com/image1.jpg",
                         },
                     ]}
+                    onBack={handleBackToScarecrowInfo}
                 />
             )}
         </View>

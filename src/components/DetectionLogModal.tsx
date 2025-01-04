@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
 
 interface DetectionLog {
     time: string;
@@ -7,13 +7,14 @@ interface DetectionLog {
     image: string;
 }
 
-interface ScarecrowInfoProps {
+interface DetectionLogModalProps {
     id: number;
     name: string;
     logs: DetectionLog[];
+    onBack: () => void;
 }
 
-const DetectionLogModal: React.FC<ScarecrowInfoProps> = ({ id, name, logs }) => {
+const DetectionLogModal: React.FC<DetectionLogModalProps> = ({ id, name, logs, onBack }) => {
     const batteryLevel = 92; // 예시 값
 
     return (
@@ -40,6 +41,9 @@ const DetectionLogModal: React.FC<ScarecrowInfoProps> = ({ id, name, logs }) => 
                     </View>
                 ))}
             </ScrollView>
+            <TouchableOpacity style={styles.backButton} onPress={onBack}>
+                <Text style={styles.backButtonText}>← 뒤로가기</Text>
+            </TouchableOpacity>
         </View>
     );
 };
@@ -119,6 +123,19 @@ const styles = StyleSheet.create({
     logTarget: {
         fontSize: 18,
         color: '#000',
+    },
+    backButton: {
+        backgroundColor: "#007bff",
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignSelf: "flex-start",
+        marginBottom: 16,
+    },
+    backButtonText: {
+        color: "#ffffff",
+        fontSize: 16,
+        fontWeight: "bold",
     },
 });
 
