@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import ScarecrowInfoModal from '../components/ScarecrowInfoModal';
+import DetectionLogModal from '../components/DetectionLogModal';
 
 interface Item {
     id: number;
@@ -18,8 +19,10 @@ const P2: React.FC = () => {
     ]);
 
     const [currentItemIndex, setCurrentItemIndex] = useState<number>(1);
+    const [currentModal, setCurrentModal] = useState<"ScarecrowInfo" | "DetectionLog">("ScarecrowInfo");
 
-    // 위치 권한 요청 함수
+    const currentItem = items[currentItemIndex]; // 현재 선택된 말뚝 아이템
+
     const requestLocationPermission = async () => {
         if (Platform.OS === 'android') {
             const granted = await PermissionsAndroid.request(
@@ -47,29 +50,28 @@ const P2: React.FC = () => {
     const handleArrowClick = (direction: 'left' | 'right') => {
         setCurrentItemIndex((prevIndex) => {
             if (direction === 'left') {
-                return prevIndex === 0 ? items.length - 1 : prevIndex - 1; // 첫 번째 항목에서 왼쪽 클릭 시 마지막 항목으로
+                return prevIndex === 0 ? items.length - 1 : prevIndex - 1;
             } else {
-                return prevIndex === items.length - 1 ? 0 : prevIndex + 1; // 마지막 항목에서 오른쪽 클릭 시 첫 번째 항목으로
+                return prevIndex === items.length - 1 ? 0 : prevIndex + 1;
             }
         });
     };
 
-    const currentItem = items[currentItemIndex]; // 현재 선택된 말뚝 아이템
+    const handleDetailInfoClick = () => {
+        setCurrentModal("DetectionLog");
+    };
 
     return (
         <View style={styles.container}>
-            {/* 지도 영역 */}
             <MapView
                 style={styles.map}
                 initialRegion={{
-                    latitude: 37.5665, // 초기 위도
-                    longitude: 126.9780, // 초기 경도
+                    latitude: 37.5665,
+                    longitude: 126.9780,
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
                 }}
-                onMapReady={() => console.log('Map is ready')}
             >
-                {/* 말뚝 마커 */}
                 {items.map((item) => (
                     <Marker
                         key={item.id}
@@ -79,12 +81,26 @@ const P2: React.FC = () => {
                 ))}
             </MapView>
 
-            {/* 하단 카드 영역 */}
-            <ScarecrowInfoModal
-                id={currentItem.id}
-                name={currentItem.name}
-                onArrowClick={handleArrowClick}
-            />
+            {currentModal === "ScarecrowInfo" ? (
+                <ScarecrowInfoModal
+                    id={currentItem.id}
+                    name={currentItem.name}
+                    onArrowClick={handleArrowClick}
+                    onDetailInfoClick={handleDetailInfoClick}
+                />
+            ) : (
+                <DetectionLogModal
+                    id={currentItem.id}
+                    name={currentItem.name}
+                    logs={[
+                        {
+                            time: "2025-01-01 12:00",
+                            target: "사람",
+                            image: "https://example.com/image1.jpg",
+                        },
+                    ]}
+                />
+            )}
         </View>
     );
 };
