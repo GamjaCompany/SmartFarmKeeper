@@ -4,12 +4,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 interface ScarecrowInfoProps {
     id: number;
     name: string;
+    battery: string;
     onArrowClick: (direction: 'left' | 'right') => void;
     onDetailInfoClick: () => void;
 }
 
-const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, onArrowClick, onDetailInfoClick }) => {
-    const batteryLevel = 92; // dummy - get required
+const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, battery, onArrowClick, onDetailInfoClick }) => {
+    // const batteryLevel = 92; // dummy - get required
     const lastDetection = "1시간 6분 전"; // dummy - get required - use castTime
 
     const castTime = (timeString: string): string => {
@@ -46,7 +47,7 @@ const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, onArrowCli
             {/* 말뚝 정보 */}
             <View style={styles.header}>
                 <Text style={styles.title}>{name}</Text>
-                <Text style={styles.battery}>🔋{batteryLevel}%</Text>
+                <Text style={styles.battery}>🔋{battery}%</Text>
             </View>
             <View>
                 <TouchableOpacity

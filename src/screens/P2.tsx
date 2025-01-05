@@ -3,26 +3,35 @@ import { View, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import ScarecrowInfoModal from '../components/ScarecrowInfoModal';
 import DetectionLogModal from '../components/DetectionLogModal';
+import { useRoute, RouteProp } from '@react-navigation/native';
 
 interface Item {
     id: number;
     name: string;
     status: string;
+    battery: string;
 }
 
-const P2: React.FC = () => {
-    const [items, setItems] = useState<Item[]>([
-        { id: 1, name: '1번 말뚝', status: '정상' },
-        { id: 2, name: '2번 말뚝', status: '고장' },
-        { id: 3, name: '3번 말뚝', status: '고장' },
-        { id: 4, name: '4번 말뚝', status: '꺼짐' },
-    ]);
+type RouteParams = {
+    params: {
+        items?: Item[];
+    };
+};
 
-    const [currentItemIndex, setCurrentItemIndex] = useState<number>(1);
+const P2: React.FC = () => {
+    // const [items, setItems] = useState<Item[]>([
+    //     { id: 1, name: '1번 말뚝', status: '정상' },
+    //     { id: 2, name: '2번 말뚝', status: '고장' },
+    //     { id: 3, name: '3번 말뚝', status: '고장' },
+    //     { id: 4, name: '4번 말뚝', status: '꺼짐' },
+    // ]);
+    const route = useRoute<RouteProp<RouteParams, 'params'>>();
+    const { items = [] }: { items?: Item[] } = route.params || {};
     const [currentModal, setCurrentModal] = useState<"ScarecrowInfo" | "DetectionLog">("ScarecrowInfo");
 
-    const currentItem = items[currentItemIndex]; // 현재 선택된 말뚝 아이템
+    const [currentItemIndex, setCurrentItemIndex] = useState<number>(0);
 
+    // 위치 권한 요청 함수
     const requestLocationPermission = async () => {
         if (Platform.OS === 'android') {
             const granted = await PermissionsAndroid.request(
@@ -65,6 +74,8 @@ const P2: React.FC = () => {
         setCurrentModal("ScarecrowInfo");
     };
 
+    const currentItem = items[currentItemIndex]; // 현재 선택된 말뚝 아이템
+
     return (
         <View style={styles.container}>
             <MapView
@@ -75,6 +86,7 @@ const P2: React.FC = () => {
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
                 }}
+                onMapReady={() => console.log('Map is ready')}
             >
                 {items.map((item) => (
                     <Marker
@@ -89,6 +101,7 @@ const P2: React.FC = () => {
                 <ScarecrowInfoModal
                     id={currentItem.id}
                     name={currentItem.name}
+                    battery={currentItem.battery}
                     onArrowClick={handleArrowClick}
                     onDetailInfoClick={handleDetailInfoClick}
                 />
