@@ -151,36 +151,61 @@ const P1: React.FC = () => {
                 if (topic === 'Notify') {
                     try {
                         const parsedData = JSON.parse(message.toString());
-                        const { idx, status, battery } = parsedData;
+                        const {idx, status, battery, cmd} = parsedData;
                         let nowStatus = "";
                         let statusDot = "";
 
-                        if (status === "GOOD") {
-                            nowStatus = "정상";
-                            statusDot = "green";
-                        }
-                        else if (status === "BAD") {
-                            nowStatus = "고장";
-                            statusDot = "red";
-                        }
-                        else if (status === "OFF") {
-                            nowStatus = "꺼짐";
-                            statusDot = "gray";
-                        }
+                        if(cmd === "new_device"){
+                            if(status === "GOOD"){
+                                nowStatus = "정상";
+                                statusDot = "green";
+                            }
+                            else if(status === "BAD"){
+                                nowStatus = "고장";
+                                statusDot = "red";
+                            }
+                            else if(status === "OFF"){
+                                nowStatus = "꺼짐";
+                                statusDot = "gray";
+                            }
 
-                        // setItems((prevItems) => [
-                        //     ...prevItems,
-                        //     {id:idx, name: `${idx}번 말뚝`, status : nowStatus, statusDot},
-                        // ])
-                        // 팝업을 띄우기 위해 데이터 설정
-                        setSelectedItem({
-                            id: idx,
-                            name: `${idx}번 말뚝`,
-                            status: nowStatus,
-                            statusDot,
-                            battery,
-                        });
-                        setModalVisible(true); // 팝업 표시
+                            setSelectedItem({
+                                id: idx, 
+                                name: `${idx}번 말뚝`, 
+                                status: nowStatus, 
+                                statusDot,
+                                battery,
+                            });
+                            setModalVisible(true); // 팝업 표시
+                        }
+                        else if(cmd === "status_update"){
+                            if(status === "GOOD"){
+                                console.log("good");
+                                nowStatus = "정상";
+                                statusDot = "green";
+                            }
+                            else if(status === "BAD"){
+                                console.log("bad");
+                                nowStatus = "고장";
+                                statusDot = "red";
+                            }
+                            else if(status === "OFF"){
+                                console.log("off");
+                                nowStatus = "꺼짐";
+                                statusDot = "gray";
+                            }
+
+                            console.log('Updating status for idx:', idx, 'with status:', nowStatus);
+                            console.log('Current items:', items);
+
+                            setItems((prevItems) =>
+                                prevItems.map((item) =>
+                                    item.id === idx
+                                        ? { ...item, status: nowStatus, statusDot }
+                                        : item
+                                )
+                            );
+                        }
                     } catch (error) {
                         console.error('Error parsing MQTT message:', error);
                     }
