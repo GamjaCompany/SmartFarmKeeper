@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ParamListBase } from '@react-navigation/native';
-import Scarecrow from '../components/Scarecrow';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import mqtt from 'mqtt';
 
 interface Item {
@@ -11,7 +11,7 @@ interface Item {
     name: string;
     status: string;
     statusDot: string;
-    battery : string;
+    battery: string;
 }
 
 interface StackParamList extends ParamListBase {
@@ -22,19 +22,100 @@ interface StackParamList extends ParamListBase {
 type P1ScreenNavigationProp = StackNavigationProp<StackParamList, 'P1'>;
 
 const P1: React.FC = () => {
-    const [items, setItems] = useState<Item[]>([
-    //     { id: 1, name: '1번 말뚝', status: '정상' },
-    //     { id: 2, name: '2번 말뚝', status: '고장' },
-    //     { id: 3, name: '3번 말뚝', status: '고장' },
-    //     { id: 4, name: '4번 말뚝', status: '꺼짐' },
-    ]);
+    const [clientId, setClientId] = useState<string | null>(null);
+
+    const [items, setItems] = useState<Item[]>([]);
 
     const [mqttMessage, setMqttMessage] = useState<string>('MQTT message');
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
     const navigation = useNavigation<P1ScreenNavigationProp>();
 
+    const generateClientId = (): string => {
+        const chars = '0123456789';
+        return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    };
+
+    // useEffect(() => {
+    //     AsyncStorage.clear()
+    //         .then(() => {
+    //             console.log('All AsyncStorage data cleared');
+    //         })
+    //         .catch((error) => {
+    //             console.error('Error clearing AsyncStorage:', error);
+    //         });
+
+    // }, []);
+
     useEffect(() => {
+        const initializeClientId = async (client: mqtt.MqttClient) => {
+            try {
+                let validClientId = false;
+                let newClientId = '';
+
+                const storedClientId = await AsyncStorage.getItem('clientId');
+                if (storedClientId) {
+                    // 저장된 ID가 있으면 그것을 사용
+                    newClientId = storedClientId;
+                    console.log('Using stored client ID:', newClientId);
+                    return;
+                }
+
+                // 메시지 핸들러 등록 (최초 한 번만 등록)
+                const messageHandler = (topic: string, message: Buffer) => {
+                    if (topic === "GET_Response") {
+                        try {
+                            const response = JSON.parse(message.toString());
+                            console.log("Received response:", response);
+        
+                            if (response.result === "Y") {
+                                // 유효한 ID가 오면 저장하고 반복문 종료
+                                AsyncStorage.setItem('clientId', newClientId);
+                                setClientId(newClientId);
+                                console.log('Generated valid client ID:', newClientId);
+                                validClientId = true;  // 유효한 ID를 받으면 반복문 종료
+                            } else if (response.result === "N") {
+                                console.log("Invalid ID received. Generating a new one...");
+        
+                                // N 응답이 오면 새로운 클라이언트 ID를 생성해서 다시 요청
+                                newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
+                                client.publish("GET", JSON.stringify({
+                                    uuid: newClientId,
+                                    cmd: 'check_id',
+                                }));
+                            }
+                        } catch (error) {
+                            console.error("Error parsing GET_Response message:", error);
+                        }
+                    }
+                };
+        
+                // 메시지 핸들러 등록
+                client.on('message', messageHandler);
+        
+                // 최초 클라이언트 ID를 생성하고 확인 요청
+                // newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
+                newClientId = '012345678910';
+                client.publish("GET", JSON.stringify({
+                    uuid: newClientId,
+                    cmd: 'check_id',
+                }));
+        
+                // 응답을 기다리기 위한 대기
+                while (!validClientId) {
+                    await new Promise(resolve => setTimeout(resolve, 500));  // 응답 대기
+                }
+        
+                // 유효한 ID를 받으면 더 이상 메시지 핸들러가 필요 없으므로 제거
+                client.removeListener('message', messageHandler);
+        
+            } catch (error) {
+                console.error('Error initializing client ID:', error);
+            }
+        };
+        
+
+
         try {
             const client = mqtt.connect('wss://1c15066522914e618d37acbb80809524.s1.eu.hivemq.cloud:8884/mqtt', {
                 username: 'tester',
@@ -60,7 +141,9 @@ const P1: React.FC = () => {
                     }
                 });
             });
-    
+
+            initializeClientId(client);   // init Client ID
+
             client.on('message', (topic, message) => {
                 console.log(`Received message from topic ${topic}: ${message.toString()}`);
                 setMqttMessage(message.toString());
@@ -68,19 +151,19 @@ const P1: React.FC = () => {
                 if (topic === 'Notify') {
                     try {
                         const parsedData = JSON.parse(message.toString());
-                        const {idx, status, battery} = parsedData;
+                        const { idx, status, battery } = parsedData;
                         let nowStatus = "";
                         let statusDot = "";
 
-                        if(status === "GOOD"){
+                        if (status === "GOOD") {
                             nowStatus = "정상";
                             statusDot = "green";
                         }
-                        else if(status === "BAD"){
+                        else if (status === "BAD") {
                             nowStatus = "고장";
                             statusDot = "red";
                         }
-                        else if(status === "OFF"){
+                        else if (status === "OFF") {
                             nowStatus = "꺼짐";
                             statusDot = "gray";
                         }
@@ -91,9 +174,9 @@ const P1: React.FC = () => {
                         // ])
                         // 팝업을 띄우기 위해 데이터 설정
                         setSelectedItem({
-                            id: idx, 
-                            name: `${idx}번 말뚝`, 
-                            status: nowStatus, 
+                            id: idx,
+                            name: `${idx}번 말뚝`,
+                            status: nowStatus,
                             statusDot,
                             battery,
                         });
@@ -105,7 +188,7 @@ const P1: React.FC = () => {
             });
 
             client.on('close', () => console.log('MQTT Connection Closed'));
-    
+
             client.on('error', (error) => {
                 console.error('MQTT Connection Error:', error);
             });
@@ -113,7 +196,7 @@ const P1: React.FC = () => {
             client.on('offline', () => console.log('MQTT Offline'));
 
             client.on('reconnect', () => console.log('MQTT Reconnecting...'));
-    
+
             return () => {
                 client.end(true, () => {
                     console.log('MQTT Disconnected');
@@ -123,7 +206,7 @@ const P1: React.FC = () => {
             console.error('useEffect Error:', error);
         }
     }, []);
-    
+
 
     return (
         <View style={styles.container}>
@@ -176,9 +259,9 @@ const P1: React.FC = () => {
                 <Text style={styles.mqttText}>{mqttMessage}</Text>
             </View>
             <TouchableOpacity style={styles.button} onPress={() => {
-                    console.log("click!");
-                    navigation.navigate('P2', { items });
-                }}>
+                console.log("click!");
+                navigation.navigate('P2', { items });
+            }}>
                 <Text style={styles.buttonText}>분석 보기</Text>
             </TouchableOpacity>
         </View>
