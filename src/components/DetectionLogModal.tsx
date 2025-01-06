@@ -76,10 +76,13 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     latestDetection: {
-        backgroundColor: '#E7E7E7',
+        margin: 20,
+        justifyContent: 'space-between',
+        alignItems: 'center',
         padding: 10,
+        marginBottom: 10,
         borderRadius: 10,
-        marginBottom: 20,
+        backgroundColor: '#E7E7E7'
     },
     warning: {
         fontSize: 28,
