@@ -115,6 +115,11 @@ const P2: React.FC = () => {
                             target: "사람",
                             image: "https://example.com/image1.jpg",
                         },
+                        {
+                            time: "2025-01-02 13:34",
+                            target: "고라니",
+                            image: "https://example.com/image2.jpg",
+                        },
                     ]}
                     onBack={handleBackToScarecrowInfo}
                 />
