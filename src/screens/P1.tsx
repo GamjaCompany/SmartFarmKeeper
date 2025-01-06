@@ -5,6 +5,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { ParamListBase } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import mqtt from 'mqtt';
+import { Notifications } from 'react-native-notifications';
+import Toast from 'react-native-toast-message';
 
 interface Item {
     id: number;
@@ -25,7 +27,6 @@ const P1: React.FC = () => {
     // const [clientId, setClientId] = useState<string | null>(null);
 
     const [items, setItems] = useState<Item[]>([]);
-
     const [mqttMessage, setMqttMessage] = useState<string>('MQTT message');
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -248,6 +249,29 @@ const P1: React.FC = () => {
                                         : item
                                 )
                             );
+                        }
+                        else if(cmd === "alert"){
+                            console.log("alert");
+
+                            Notifications.postLocalNotification({
+                                title : "움직임 감지",
+                                body: `${idx}번 말뚝에서 움직임이 감지되었습니다.`,
+                                identifier: `alert-${idx}`, // 알림의 고유 ID (필수 아님, 하지만 권장)
+                                payload: { idx },           // 알림과 함께 전달할 데이터 (필수 아님)
+                                sound: "default",           // 알림 사운드 (기본값: default)
+                                badge: 1,  
+                                type: "default",                                // 알림 유형 (필수)
+                                thread: `thread-${idx}`,                        // 알림 스레드 (필수)
+                            });
+
+                            // Toast 메시지
+                            Toast.show({
+                                type: "success",           // 성공 스타일 (default, success, error 중 선택)
+                                text1: "움직임 감지",    // 제목
+                                text2: `${idx}번 말뚝에서 움직임이 감지되었습니다.`, // 메시지 내용
+                                position: "top",        // 위치 (top, bottom)
+                                visibilityTime: 3000,      // 표시 시간 (ms)
+                            });
                         }
                     } catch (error) {
                         console.error('Error parsing MQTT message:', error);
