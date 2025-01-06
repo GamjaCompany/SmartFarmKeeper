@@ -3,7 +3,7 @@ import { View, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import ScarecrowInfoModal from '../components/ScarecrowInfoModal';
 import DetectionLogModal from '../components/DetectionLogModal';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 
 interface Item {
     id: number;
@@ -26,7 +26,7 @@ const P2: React.FC = () => {
     //     { id: 4, name: '4번 말뚝', status: '꺼짐' },
     // ]);
     const route = useRoute<RouteProp<RouteParams, 'params'>>();
-    const { items = [] }: { items?: Item[] } = route.params || {};
+    const [items, setItems] = useState<Item[]>(route.params?.items || []);
     const [currentModal, setCurrentModal] = useState<"ScarecrowInfo" | "DetectionLog">("ScarecrowInfo");
 
     const [currentItemIndex, setCurrentItemIndex] = useState<number>(0);
@@ -55,6 +55,14 @@ const P2: React.FC = () => {
     useEffect(() => {
         requestLocationPermission();
     }, []);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            if (route.params?.items) {
+                setItems(route.params.items);
+            }
+        }, [route.params?.items])
+    );
 
     const handleArrowClick = (direction: 'left' | 'right') => {
         setCurrentItemIndex((prevIndex) => {
