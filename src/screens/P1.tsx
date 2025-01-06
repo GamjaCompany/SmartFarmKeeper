@@ -22,7 +22,7 @@ interface StackParamList extends ParamListBase {
 type P1ScreenNavigationProp = StackNavigationProp<StackParamList, 'P1'>;
 
 const P1: React.FC = () => {
-    const [clientId, setClientId] = useState<string | null>(null);
+    // const [clientId, setClientId] = useState<string | null>(null);
 
     const [items, setItems] = useState<Item[]>([]);
 
@@ -31,12 +31,12 @@ const P1: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
     const navigation = useNavigation<P1ScreenNavigationProp>();
 
-    const generateClientId = (): string => {
-        const chars = '0123456789';
-        return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    };
+    // const generateClientId = (): string => {
+    //     const chars = '0123456789';
+    //     return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    // };
 
-    // useEffect(() => {
+    useEffect(() => {
     //     AsyncStorage.clear()
     //         .then(() => {
     //             console.log('All AsyncStorage data cleared');
@@ -47,72 +47,72 @@ const P1: React.FC = () => {
 
     // }, []);
 
-    useEffect(() => {
-        const initializeClientId = async (client: mqtt.MqttClient) => {
-            try {
-                let validClientId = false;
-                let newClientId = '';
+    // useEffect(() => {
+    //     const initializeClientId = async (client: mqtt.MqttClient) => {
+    //         try {
+    //             let validClientId = false;
+    //             let newClientId = '';
 
-                const storedClientId = await AsyncStorage.getItem('clientId');
-                if (storedClientId) {
-                    // 저장된 ID가 있으면 그것을 사용
-                    newClientId = storedClientId;
-                    console.log('Using stored client ID:', newClientId);
-                    return;
-                }
+    //             const storedClientId = await AsyncStorage.getItem('clientId');
+    //             if (storedClientId) {
+    //                 // 저장된 ID가 있으면 그것을 사용
+    //                 newClientId = storedClientId;
+    //                 console.log('Using stored client ID:', newClientId);
+    //                 return;
+    //             }
 
-                // 메시지 핸들러 등록 (최초 한 번만 등록)
-                const messageHandler = (topic: string, message: Buffer) => {
-                    if (topic === "GET_Response") {
-                        try {
-                            const response = JSON.parse(message.toString());
-                            console.log("Received response:", response);
+    //             // 메시지 핸들러 등록 (최초 한 번만 등록)
+    //             const messageHandler = (topic: string, message: Buffer) => {
+    //                 if (topic === "GET_Response") {
+    //                     try {
+    //                         const response = JSON.parse(message.toString());
+    //                         console.log("Received response:", response);
         
-                            if (response.result === "Y") {
-                                // 유효한 ID가 오면 저장하고 반복문 종료
-                                AsyncStorage.setItem('clientId', newClientId);
-                                setClientId(newClientId);
-                                console.log('Generated valid client ID:', newClientId);
-                                validClientId = true;  // 유효한 ID를 받으면 반복문 종료
-                            } else if (response.result === "N") {
-                                console.log("Invalid ID received. Generating a new one...");
+    //                         if (response.result === "Y") {
+    //                             // 유효한 ID가 오면 저장하고 반복문 종료
+    //                             AsyncStorage.setItem('clientId', newClientId);
+    //                             setClientId(newClientId);
+    //                             console.log('Generated valid client ID:', newClientId);
+    //                             validClientId = true;  // 유효한 ID를 받으면 반복문 종료
+    //                         } else if (response.result === "N") {
+    //                             console.log("Invalid ID received. Generating a new one...");
         
-                                // N 응답이 오면 새로운 클라이언트 ID를 생성해서 다시 요청
-                                newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
-                                client.publish("GET", JSON.stringify({
-                                    uuid: newClientId,
-                                    cmd: 'check_id',
-                                }));
-                            }
-                        } catch (error) {
-                            console.error("Error parsing GET_Response message:", error);
-                        }
-                    }
-                };
+    //                             // N 응답이 오면 새로운 클라이언트 ID를 생성해서 다시 요청
+    //                             newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
+    //                             client.publish("GET", JSON.stringify({
+    //                                 uuid: newClientId,
+    //                                 cmd: 'check_id',
+    //                             }));
+    //                         }
+    //                     } catch (error) {
+    //                         console.error("Error parsing GET_Response message:", error);
+    //                     }
+    //                 }
+    //             };
         
-                // 메시지 핸들러 등록
-                client.on('message', messageHandler);
+    //             // 메시지 핸들러 등록
+    //             client.on('message', messageHandler);
         
-                // 최초 클라이언트 ID를 생성하고 확인 요청
-                // newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
-                newClientId = '012345678910';
-                client.publish("GET", JSON.stringify({
-                    uuid: newClientId,
-                    cmd: 'check_id',
-                }));
+    //             // 최초 클라이언트 ID를 생성하고 확인 요청
+    //             // newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
+    //             newClientId = '012345678910';
+    //             client.publish("GET", JSON.stringify({
+    //                 uuid: newClientId,
+    //                 cmd: 'check_id',
+    //             }));
         
-                // 응답을 기다리기 위한 대기
-                while (!validClientId) {
-                    await new Promise(resolve => setTimeout(resolve, 500));  // 응답 대기
-                }
+    //             // 응답을 기다리기 위한 대기
+    //             while (!validClientId) {
+    //                 await new Promise(resolve => setTimeout(resolve, 500));  // 응답 대기
+    //             }
         
-                // 유효한 ID를 받으면 더 이상 메시지 핸들러가 필요 없으므로 제거
-                client.removeListener('message', messageHandler);
+    //             // 유효한 ID를 받으면 더 이상 메시지 핸들러가 필요 없으므로 제거
+    //             client.removeListener('message', messageHandler);
         
-            } catch (error) {
-                console.error('Error initializing client ID:', error);
-            }
-        };
+    //         } catch (error) {
+    //             console.error('Error initializing client ID:', error);
+    //         }
+    //     };
         
 
 
@@ -142,7 +142,7 @@ const P1: React.FC = () => {
                 });
             });
 
-            initializeClientId(client);   // init Client ID
+            // initializeClientId(client);   // init Client ID
 
             client.on('message', (topic, message) => {
                 console.log(`Received message from topic ${topic}: ${message.toString()}`);
