@@ -29,6 +29,7 @@ const P1: React.FC = () => {
     const [mqttMessage, setMqttMessage] = useState<string>('MQTT message');
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+    const [numDevices, SetNumDevices] = useState<number>(0);
     const navigation = useNavigation<P1ScreenNavigationProp>();
 
     // const generateClientId = (): string => {
@@ -36,84 +37,118 @@ const P1: React.FC = () => {
     //     return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     // };
 
-    useEffect(() => {
-    //     AsyncStorage.clear()
-    //         .then(() => {
-    //             console.log('All AsyncStorage data cleared');
-    //         })
-    //         .catch((error) => {
-    //             console.error('Error clearing AsyncStorage:', error);
-    //         });
+    const saveItemToStorage = async (itemList: Item[]) => {
+        try {
+            const jsonValue = JSON.stringify(itemList);
+            await AsyncStorage.setItem('@piling_items', jsonValue);
+            console.log('Items saved to storage!');
+        } catch (e) {
+            console.error('Failed to save items to storage:', e);
+        }
+    };
 
-    // }, []);
+    const loadItemsFromStorage = async () => {
+        try {
+            const jsonValue = await AsyncStorage.getItem('@piling_items');
+            return jsonValue != null ? JSON.parse(jsonValue) : [];
+        } catch (e) {
+            console.error('Failed to load items from storage:', e);
+            return [];
+        }
+    };
+
+    useEffect(() => {
+        const fetchItems = async () => {
+            try {
+                const storedItems = await loadItemsFromStorage();
+                setItems(storedItems);
+                SetNumDevices(storedItems.length);
+            } catch (error) {
+                console.error('Error loading items from storage:', error);
+            }
+        };
+
+        fetchItems();
+    }, []);
 
     // useEffect(() => {
-    //     const initializeClientId = async (client: mqtt.MqttClient) => {
-    //         try {
-    //             let validClientId = false;
-    //             let newClientId = '';
+    //         AsyncStorage.clear()
+    //             .then(() => {
+    //                 console.log('All AsyncStorage data cleared');
+    //             })
+    //             .catch((error) => {
+    //                 console.error('Error clearing AsyncStorage:', error);
+    //             });
 
-    //             const storedClientId = await AsyncStorage.getItem('clientId');
-    //             if (storedClientId) {
-    //                 // 저장된 ID가 있으면 그것을 사용
-    //                 newClientId = storedClientId;
-    //                 console.log('Using stored client ID:', newClientId);
-    //                 return;
-    //             }
+    //     }, []);
 
-    //             // 메시지 핸들러 등록 (최초 한 번만 등록)
-    //             const messageHandler = (topic: string, message: Buffer) => {
-    //                 if (topic === "GET_Response") {
-    //                     try {
-    //                         const response = JSON.parse(message.toString());
-    //                         console.log("Received response:", response);
-        
-    //                         if (response.result === "Y") {
-    //                             // 유효한 ID가 오면 저장하고 반복문 종료
-    //                             AsyncStorage.setItem('clientId', newClientId);
-    //                             setClientId(newClientId);
-    //                             console.log('Generated valid client ID:', newClientId);
-    //                             validClientId = true;  // 유효한 ID를 받으면 반복문 종료
-    //                         } else if (response.result === "N") {
-    //                             console.log("Invalid ID received. Generating a new one...");
-        
-    //                             // N 응답이 오면 새로운 클라이언트 ID를 생성해서 다시 요청
-    //                             newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
-    //                             client.publish("GET", JSON.stringify({
-    //                                 uuid: newClientId,
-    //                                 cmd: 'check_id',
-    //                             }));
-    //                         }
-    //                     } catch (error) {
-    //                         console.error("Error parsing GET_Response message:", error);
-    //                     }
-    //                 }
-    //             };
-        
-    //             // 메시지 핸들러 등록
-    //             client.on('message', messageHandler);
-        
-    //             // 최초 클라이언트 ID를 생성하고 확인 요청
-    //             // newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
-    //             newClientId = '012345678910';
-    //             client.publish("GET", JSON.stringify({
-    //                 uuid: newClientId,
-    //                 cmd: 'check_id',
-    //             }));
-        
-    //             // 응답을 기다리기 위한 대기
-    //             while (!validClientId) {
-    //                 await new Promise(resolve => setTimeout(resolve, 500));  // 응답 대기
-    //             }
-        
-    //             // 유효한 ID를 받으면 더 이상 메시지 핸들러가 필요 없으므로 제거
-    //             client.removeListener('message', messageHandler);
-        
-    //         } catch (error) {
-    //             console.error('Error initializing client ID:', error);
-    //         }
-    //     };
-        
+    useEffect(() => {
+        //     const initializeClientId = async (client: mqtt.MqttClient) => {
+        //         try {
+        //             let validClientId = false;
+        //             let newClientId = '';
+
+        //             const storedClientId = await AsyncStorage.getItem('clientId');
+        //             if (storedClientId) {
+        //                 // 저장된 ID가 있으면 그것을 사용
+        //                 newClientId = storedClientId;
+        //                 console.log('Using stored client ID:', newClientId);
+        //                 return;
+        //             }
+
+        //             // 메시지 핸들러 등록 (최초 한 번만 등록)
+        //             const messageHandler = (topic: string, message: Buffer) => {
+        //                 if (topic === "GET_Response") {
+        //                     try {
+        //                         const response = JSON.parse(message.toString());
+        //                         console.log("Received response:", response);
+
+        //                         if (response.result === "Y") {
+        //                             // 유효한 ID가 오면 저장하고 반복문 종료
+        //                             AsyncStorage.setItem('clientId', newClientId);
+        //                             setClientId(newClientId);
+        //                             console.log('Generated valid client ID:', newClientId);
+        //                             validClientId = true;  // 유효한 ID를 받으면 반복문 종료
+        //                         } else if (response.result === "N") {
+        //                             console.log("Invalid ID received. Generating a new one...");
+
+        //                             // N 응답이 오면 새로운 클라이언트 ID를 생성해서 다시 요청
+        //                             newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
+        //                             client.publish("GET", JSON.stringify({
+        //                                 uuid: newClientId,
+        //                                 cmd: 'check_id',
+        //                             }));
+        //                         }
+        //                     } catch (error) {
+        //                         console.error("Error parsing GET_Response message:", error);
+        //                     }
+        //                 }
+        //             };
+
+        //             // 메시지 핸들러 등록
+        //             client.on('message', messageHandler);
+
+        //             // 최초 클라이언트 ID를 생성하고 확인 요청
+        //             // newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
+        //             newClientId = '012345678910';
+        //             client.publish("GET", JSON.stringify({
+        //                 uuid: newClientId,
+        //                 cmd: 'check_id',
+        //             }));
+
+        //             // 응답을 기다리기 위한 대기
+        //             while (!validClientId) {
+        //                 await new Promise(resolve => setTimeout(resolve, 500));  // 응답 대기
+        //             }
+
+        //             // 유효한 ID를 받으면 더 이상 메시지 핸들러가 필요 없으므로 제거
+        //             client.removeListener('message', messageHandler);
+
+        //         } catch (error) {
+        //             console.error('Error initializing client ID:', error);
+        //         }
+        //     };
+
 
 
         try {
@@ -144,6 +179,8 @@ const P1: React.FC = () => {
 
             // initializeClientId(client);   // init Client ID
 
+            // loadItemsFromStorage()
+
             client.on('message', (topic, message) => {
                 console.log(`Received message from topic ${topic}: ${message.toString()}`);
                 setMqttMessage(message.toString());
@@ -151,45 +188,51 @@ const P1: React.FC = () => {
                 if (topic === 'Notify') {
                     try {
                         const parsedData = JSON.parse(message.toString());
-                        const {idx, status, battery, cmd} = parsedData;
+                        const { idx, status, battery, cmd } = parsedData;
                         let nowStatus = "";
                         let statusDot = "";
 
-                        if(cmd === "new_device"){
-                            if(status === "GOOD"){
+                        if (cmd === "new_device") {
+                            const isDuplicate = items.some((item) => item.id === idx);
+
+                            if (isDuplicate) {
+                                console.log(`Duplicate idx (${idx}) detected. Ignoring command.`);
+                                return; // 중복된 경우 처리 중단
+                            }
+                            if (status === "GOOD") {
                                 nowStatus = "정상";
                                 statusDot = "green";
                             }
-                            else if(status === "BAD"){
+                            else if (status === "BAD") {
                                 nowStatus = "고장";
                                 statusDot = "red";
                             }
-                            else if(status === "OFF"){
+                            else if (status === "OFF") {
                                 nowStatus = "꺼짐";
                                 statusDot = "gray";
                             }
 
                             setSelectedItem({
-                                id: idx, 
-                                name: `${idx}번 말뚝`, 
-                                status: nowStatus, 
+                                id: idx,
+                                name: `${numDevices + 1}번 말뚝`,
+                                status: nowStatus,
                                 statusDot,
                                 battery,
                             });
                             setModalVisible(true); // 팝업 표시
                         }
-                        else if(cmd === "status_update"){
-                            if(status === "GOOD"){
+                        else if (cmd === "status_update") {
+                            if (status === "GOOD") {
                                 console.log("good");
                                 nowStatus = "정상";
                                 statusDot = "green";
                             }
-                            else if(status === "BAD"){
+                            else if (status === "BAD") {
                                 console.log("bad");
                                 nowStatus = "고장";
                                 statusDot = "red";
                             }
-                            else if(status === "OFF"){
+                            else if (status === "OFF") {
                                 console.log("off");
                                 nowStatus = "꺼짐";
                                 statusDot = "gray";
@@ -230,7 +273,7 @@ const P1: React.FC = () => {
         } catch (error) {
             console.error('useEffect Error:', error);
         }
-    }, []);
+    }, [numDevices]);
 
 
     return (
@@ -241,18 +284,33 @@ const P1: React.FC = () => {
                         <Text style={styles.modalText}>새로운 말뚝을 찾았어요!</Text>
                         <TouchableOpacity
                             style={styles.modalButton}
-                            onPress={() => {
+                            onPress={async () => {
                                 if (selectedItem) {
-                                    setItems((prevItems) => [
-                                        ...prevItems,
-                                        {
+                                    // 중복 검사: selectedItem.id가 이미 items 배열에 존재하는지 확인
+                                    const isDuplicate = items.some((item) => item.id === selectedItem.id);
+
+                                    if (!isDuplicate) {
+                                        const newItem = {
                                             id: selectedItem.id,
                                             name: selectedItem.name,
                                             status: selectedItem.status,
                                             statusDot: selectedItem.statusDot,
                                             battery: selectedItem.battery,
-                                        },
-                                    ]);
+                                        };
+
+                                        setItems((prevItems) => [...prevItems, newItem]);
+                                        SetNumDevices(numDevices + 1);
+
+                                        // 스토리지에 저장
+                                        try {
+                                            const currentItems = await loadItemsFromStorage();
+                                            await saveItemToStorage([...currentItems, newItem]);
+                                        } catch (error) {
+                                            console.error('Error saving new item to storage:', error);
+                                        }
+                                    } else {
+                                        console.log(`Duplicate device (id: ${selectedItem.id}) not added.`);
+                                    }
                                 }
                                 setModalVisible(false); // 팝업 닫기
                             }}

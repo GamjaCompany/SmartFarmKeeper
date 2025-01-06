@@ -63,7 +63,7 @@ const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, battery, o
             </View>
 
             {/* 화살표 버튼 */}
-            <View style={styles.buttons}>
+            {/* <View style={styles.buttons}>
                 <TouchableOpacity
                     style={styles.arrowButton}
                     onPress={() => onArrowClick('left')}
@@ -76,7 +76,7 @@ const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, battery, o
                 >
                     <Text style={styles.arrowText}>→</Text>
                 </TouchableOpacity>
-            </View>
+            </View> */}
         </View>
     );
 };
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#E7E7E7',
     },
     detectContent: {
-        flexDirection: "row",
-        justifyContent: "space-between",
+        flexDirection: "column",
+        justifyContent: "center",
         width: "100%",
     },
     title: {
@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     time: {
+        paddingLeft: 40,
         fontSize: 28,
         color: '#000',
     },
