@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ParamListBase } from '@react-navigation/native';
@@ -7,6 +7,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import mqtt from 'mqtt';
 import { Notifications } from 'react-native-notifications';
 import Toast from 'react-native-toast-message';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+
+const DOUBLE_TAP_INTERVAL = 300;
 
 interface Item {
     id: number;
@@ -29,20 +32,94 @@ const P1: React.FC = () => {
     const [items, setItems] = useState<Item[]>([]);
     const [mqttMessage, setMqttMessage] = useState<string>('MQTT message');
     const [modalVisible, setModalVisible] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<Item | null>(null);
     const [numDevices, SetNumDevices] = useState<number>(0);
+    const [deleteMode, setDeleteMode] = useState<number | null>(null); // 제거 모드 활성화 상태
+    const [selectedItem, setSelectedItem] = useState<Item | null>(null); // 선택된 아이템
+    const [isContextMenuVisible, setIsContextMenuVisible] = useState(false); // 컨텍스트 메뉴 표시 여부
     const navigation = useNavigation<P1ScreenNavigationProp>();
+    const [message, setMessage] = useState('');
+    const lastTapRef = useRef<number | null>(null);
+    const [deletedItems, setDeletedItems] = useState<number[]>([]);
 
     // const generateClientId = (): string => {
     //     const chars = '0123456789';
     //     return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     // };
 
+    const handleDragEnd = ({ data }: { data: Item[] }) => {
+        setItems(data); // 드래그 후 정렬된 데이터로 상태 업데이트
+        saveItemToStorage(data); // 정렬된 데이터 스토리지에 저장
+    };
+
+    const handleDeleteItem = async (id: number) => {
+        try {
+            const updatedItems = items.filter((item) => item.id !== id); // 삭제된 항목 제외
+            setItems(updatedItems); // 상태 업데이트
+            
+            // 삭제된 idx를 저장
+            setDeletedItems((prev) => [...prev, id]);
+    
+            // 비동기 스토리지 업데이트 후 numDevices 업데이트
+            await saveItemToStorage(updatedItems);
+            console.log('Current items in storage after deletion:', updatedItems);
+    
+            // numDevices 상태 업데이트
+            SetNumDevices(updatedItems.length); // updatedItems 배열의 길이 사용
+        } catch (error) {
+            console.error('Error deleting item:', error);
+        } finally {
+            setIsContextMenuVisible(false); // 컨텍스트 메뉴 닫기
+        }
+    };
+
+    const handleLongPress = (item: Item) => {
+        setSelectedItem(item);
+        setIsContextMenuVisible(true); // 컨텍스트 메뉴 열기
+    };
+
+    const handleTap = (item: Item) => {
+        const now = Date.now();
+        if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_INTERVAL) {
+          // 더블 탭인 경우 → 컨텍스트 메뉴 표시
+          lastTapRef.current = null;
+          setSelectedItem(item);
+          setIsContextMenuVisible(true);
+        } else {
+          // 첫 번째 탭a
+          lastTapRef.current = now;
+          setTimeout(() => {
+            // 탭 간격 내에 두 번째 탭이 없으면 싱글 탭
+            if (lastTapRef.current && Date.now() - lastTapRef.current >= DOUBLE_TAP_INTERVAL) {
+              // 싱글 탭 로직 (원한다면 여기에 작성)
+              // 예: console.log(`싱글 탭: ${item.name}`);
+              lastTapRef.current = null;
+            }
+          }, DOUBLE_TAP_INTERVAL);
+        }
+      };
+
+    const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => (
+        <TouchableOpacity
+            style={[styles.card, { backgroundColor: isActive ? '#f0f0f0' : '#fff' },]} // 드래그 중인 항목 스타일
+            onLongPress={drag}
+            delayLongPress={500}
+            // 탭(싱글/더블) 처리
+            onPress={() => handleTap(item)}
+        >
+            <Text style={styles.cardTitle}>{item.id}번 말뚝</Text>
+            <View style={styles.statusContainer}>
+                <View style={[styles.statusDot, { backgroundColor: item.statusDot }]}/>
+                <Text style={styles.statusText}>{item.status}</Text>
+            </View>
+        </TouchableOpacity>
+    );
+
     const saveItemToStorage = async (itemList: Item[]) => {
         try {
             const jsonValue = JSON.stringify(itemList);
             await AsyncStorage.setItem('@piling_items', jsonValue);
             console.log('Items saved to storage!');
+            console.log(items);
         } catch (e) {
             console.error('Failed to save items to storage:', e);
         }
@@ -71,6 +148,24 @@ const P1: React.FC = () => {
 
         fetchItems();
     }, []);
+
+    useEffect(() => {
+        // items와 deletedItems 상태를 최신 상태로 동기화
+        setDeletedItems((prev) =>
+          prev.filter((id) => !items.some((item) => item.id === id))
+        );
+      }, [items]);
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+          console.log('현재 items 리스트:', items);
+        }, 5000);
+    
+        // 언마운트되거나 items 변경으로 useEffect 재실행 시 interval 정리
+        return () => {
+          clearInterval(intervalId);
+        };
+      }, [items]); 
 
     // useEffect(() => {
     //         AsyncStorage.clear()
@@ -302,6 +397,40 @@ const P1: React.FC = () => {
 
     return (
         <View style={styles.container}>
+            <DraggableFlatList
+                data={items}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.id.toString()}
+                onDragEnd={({ data }) => {
+                    setItems(data); // 드래그 후 정렬된 데이터 저장
+                    saveItemToStorage(data); // 스토리지에 저장
+                }}
+                activationDistance={10} // 드래그 민감도 설정
+            />
+            {isContextMenuVisible && (
+            <TouchableWithoutFeedback onPress={() => setIsContextMenuVisible(false)}>
+                    <View style={[styles.contextMenuOverlay, { zIndex: 10 }]}>
+                        {/* 여기는 '배경' 영역. 실제 클릭하면 메뉴를 닫음 */}
+                        <TouchableWithoutFeedback onPress={() => { /* 여기서는 닫히지 않음 */ }}>
+                            <View style={[styles.contextMenuBox, { zIndex: 11 }]}>
+                                <Text style={styles.contextMenuTitle}>
+                                    {selectedItem?.id}번 말뚝 삭제
+                                </Text>
+                                <TouchableOpacity
+                                    style={styles.contextMenuButton}
+                                    onPress={() => {
+                                        if (selectedItem) {
+                                            handleDeleteItem(selectedItem.id);
+                                        }
+                                    }}
+                                >
+                                    <Text style={styles.contextMenuButtonText}>삭제</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            )}
             {modalVisible && (
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
@@ -350,7 +479,7 @@ const P1: React.FC = () => {
                     </View>
                 </View>
             )}
-            <ScrollView contentContainerStyle={styles.scrollView}>
+            {/* <ScrollView contentContainerStyle={styles.scrollView}>
                 {items.map((item) => (
                     // <Scarecrow key={item.id} id={item.id} name={item.name} status={item.status}/>
                     <View key={item.id} style={styles.card}>
@@ -361,16 +490,18 @@ const P1: React.FC = () => {
                         </View>
                     </View>
                 ))}
-            </ScrollView>
-            <View style={styles.mqttContainer}>
+            </ScrollView> */}
+            {/* <View style={styles.mqttContainer}>
                 <Text style={styles.mqttText}>{mqttMessage}</Text>
+            </View> */}
+            <View style={styles.showanalysis}>
+                <TouchableOpacity style={styles.button} onPress={() => {
+                    console.log("click!");
+                    navigation.navigate('P2', { items });
+                }}>
+                    <Text style={styles.buttonText}>분석 보기</Text>
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.button} onPress={() => {
-                console.log("click!");
-                navigation.navigate('P2', { items });
-            }}>
-                <Text style={styles.buttonText}>분석 보기</Text>
-            </TouchableOpacity>
         </View>
     );
 };
@@ -478,11 +609,57 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 10,
     },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 15,
+    },
     modalButtonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
     },
+    contextMenuOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)', // 반투명
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    contextMenuBox: {
+        width: 250,
+        padding: 20,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    contextMenuTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    contextMenuButton: {
+        marginTop: 10,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        backgroundColor: '#000',
+        borderRadius: 8,
+    },
+    contextMenuButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    showanalysis: {
+        position: 'absolute', // 버튼을 고정
+        bottom: 20, // 하단에서의 거리
+        left: 20, // 좌측 여백
+        right: 20, // 우측 여백
+        alignItems: 'center',
+    }  
 });
 
 export default P1;
