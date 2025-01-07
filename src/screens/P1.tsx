@@ -414,7 +414,7 @@ const P1: React.FC = () => {
                         <TouchableWithoutFeedback onPress={() => { /* 여기서는 닫히지 않음 */ }}>
                             <View style={[styles.contextMenuBox, { zIndex: 11 }]}>
                                 <Text style={styles.contextMenuTitle}>
-                                    {selectedItem?.name} 삭제
+                                    {selectedItem?.id}번 말뚝 삭제
                                 </Text>
                                 <TouchableOpacity
                                     style={styles.contextMenuButton}
