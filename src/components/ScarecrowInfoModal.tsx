@@ -5,11 +5,11 @@ interface ScarecrowInfoProps {
     id: number;
     name: string;
     battery: string;
-    onArrowClick: (direction: 'left' | 'right') => void;
+    // onArrowClick: (direction: 'left' | 'right') => void;
     onDetailInfoClick: () => void;
 }
 
-const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, battery, onArrowClick, onDetailInfoClick }) => {
+const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, battery, onDetailInfoClick }) => {
     // const batteryLevel = 92; // dummy - get required
     const lastDetection = "1시간 6분 전"; // dummy - get required - use castTime
 
@@ -46,7 +46,7 @@ const ScarecrowInfoModal: React.FC<ScarecrowInfoProps> = ({ id, name, battery, o
         <View style={styles.card}>
             {/* 말뚝 정보 */}
             <View style={styles.header}>
-                <Text style={styles.title}>{name}</Text>
+                <Text style={styles.title}>{id}번 말뚝</Text>
                 <Text style={styles.battery}>🔋{battery}%</Text>
             </View>
             <View>

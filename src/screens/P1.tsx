@@ -17,6 +17,8 @@ interface Item {
     status: string;
     statusDot: string;
     battery: string;
+    lat: number
+    lng: number
 }
 
 interface StackParamList extends ParamListBase {
@@ -33,11 +35,11 @@ const P1: React.FC = () => {
     const [mqttMessage, setMqttMessage] = useState<string>('MQTT message');
     const [modalVisible, setModalVisible] = useState(false);
     const [numDevices, SetNumDevices] = useState<number>(0);
-    const [deleteMode, setDeleteMode] = useState<number | null>(null); // 제거 모드 활성화 상태
+    // const [deleteMode, setDeleteMode] = useState<number | null>(null); // 제거 모드 활성화 상태
     const [selectedItem, setSelectedItem] = useState<Item | null>(null); // 선택된 아이템
     const [isContextMenuVisible, setIsContextMenuVisible] = useState(false); // 컨텍스트 메뉴 표시 여부
     const navigation = useNavigation<P1ScreenNavigationProp>();
-    const [message, setMessage] = useState('');
+    // const [message, setMessage] = useState('');
     const lastTapRef = useRef<number | null>(null);
     const [deletedItems, setDeletedItems] = useState<number[]>([]);
 
@@ -179,74 +181,6 @@ const P1: React.FC = () => {
     //     }, []);
 
     useEffect(() => {
-        //     const initializeClientId = async (client: mqtt.MqttClient) => {
-        //         try {
-        //             let validClientId = false;
-        //             let newClientId = '';
-
-        //             const storedClientId = await AsyncStorage.getItem('clientId');
-        //             if (storedClientId) {
-        //                 // 저장된 ID가 있으면 그것을 사용
-        //                 newClientId = storedClientId;
-        //                 console.log('Using stored client ID:', newClientId);
-        //                 return;
-        //             }
-
-        //             // 메시지 핸들러 등록 (최초 한 번만 등록)
-        //             const messageHandler = (topic: string, message: Buffer) => {
-        //                 if (topic === "GET_Response") {
-        //                     try {
-        //                         const response = JSON.parse(message.toString());
-        //                         console.log("Received response:", response);
-
-        //                         if (response.result === "Y") {
-        //                             // 유효한 ID가 오면 저장하고 반복문 종료
-        //                             AsyncStorage.setItem('clientId', newClientId);
-        //                             setClientId(newClientId);
-        //                             console.log('Generated valid client ID:', newClientId);
-        //                             validClientId = true;  // 유효한 ID를 받으면 반복문 종료
-        //                         } else if (response.result === "N") {
-        //                             console.log("Invalid ID received. Generating a new one...");
-
-        //                             // N 응답이 오면 새로운 클라이언트 ID를 생성해서 다시 요청
-        //                             newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
-        //                             client.publish("GET", JSON.stringify({
-        //                                 uuid: newClientId,
-        //                                 cmd: 'check_id',
-        //                             }));
-        //                         }
-        //                     } catch (error) {
-        //                         console.error("Error parsing GET_Response message:", error);
-        //                     }
-        //                 }
-        //             };
-
-        //             // 메시지 핸들러 등록
-        //             client.on('message', messageHandler);
-
-        //             // 최초 클라이언트 ID를 생성하고 확인 요청
-        //             // newClientId = generateClientId(); // 새로운 ID 생성 함수 호출
-        //             newClientId = '012345678910';
-        //             client.publish("GET", JSON.stringify({
-        //                 uuid: newClientId,
-        //                 cmd: 'check_id',
-        //             }));
-
-        //             // 응답을 기다리기 위한 대기
-        //             while (!validClientId) {
-        //                 await new Promise(resolve => setTimeout(resolve, 500));  // 응답 대기
-        //             }
-
-        //             // 유효한 ID를 받으면 더 이상 메시지 핸들러가 필요 없으므로 제거
-        //             client.removeListener('message', messageHandler);
-
-        //         } catch (error) {
-        //             console.error('Error initializing client ID:', error);
-        //         }
-        //     };
-
-
-
         try {
             const client = mqtt.connect('wss://1c15066522914e618d37acbb80809524.s1.eu.hivemq.cloud:8884/mqtt', {
                 username: 'tester',
@@ -284,9 +218,11 @@ const P1: React.FC = () => {
                 if (topic === 'Notify') {
                     try {
                         const parsedData = JSON.parse(message.toString());
-                        const { idx, status, battery, cmd } = parsedData;
+                        const { idx, status, battery, cmd, lat, lng } = parsedData;
                         let nowStatus = "";
                         let statusDot = "";
+                        const iLat = Number(lat);
+                        const iLng = Number(lng);
 
                         if (cmd === "new_device") {
                             const isDuplicate = items.some((item) => item.id === idx);
@@ -313,6 +249,8 @@ const P1: React.FC = () => {
                                 name: `${numDevices + 1}번 말뚝`,
                                 status: nowStatus,
                                 statusDot,
+                                lat: iLat,
+                                lng: iLng,
                                 battery,
                             });
                             setModalVisible(true); // 팝업 표시
@@ -448,6 +386,8 @@ const P1: React.FC = () => {
                                             name: selectedItem.name,
                                             status: selectedItem.status,
                                             statusDot: selectedItem.statusDot,
+                                            lat: selectedItem.lat,
+                                            lng: selectedItem.lng,
                                             battery: selectedItem.battery,
                                         };
 
