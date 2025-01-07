@@ -11,14 +11,16 @@ interface Item {
     name: string;
     status: string;
     battery: string;
+    lat: number;
+    lng: number;
 }
 
 interface DetectionLog {
     time: string;
     object?: string;
     img_url?: string;
-  }
-  
+}
+
 
 type RouteParams = {
     params: {
@@ -37,6 +39,7 @@ const P2: React.FC = () => {
     //     { id: 4, name: '4번 말뚝', status: '꺼짐' },
     // ]);
     const route = useRoute<RouteProp<RouteParams, 'params'>>();
+    const [items, setItems] = useState<Item[]>(route.params?.items || []);
     const [currentModal, setCurrentModal] = useState<"ScarecrowInfo" | "DetectionLog">("ScarecrowInfo");
     const [currentItemIndex, setCurrentItemIndex] = useState<number>(0);
     const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -45,9 +48,6 @@ const P2: React.FC = () => {
     const [mqttClient, setMqttClient] = useState<mqtt.MqttClient | null>(null);
     const [battery, setBattery] = useState<string>('??');
     // const [items, setItems] = useState<Item[]>(route.params?.items || []);
-
-        // 파라미터에서 받아온 값들
-    const items   = route.params?.items   || [];
 
     useEffect(() => {
         if (route.params?.logs) {
@@ -70,10 +70,10 @@ const P2: React.FC = () => {
     }, [currentItemIndex, items]);
 
     useEffect(() => {
-        requestLocationPermission(); 
-      }, []);
+        requestLocationPermission();
+    }, []);
 
-      useEffect(() => {
+    useEffect(() => {
         // P1에서 전달받은 값 저장
         if (route.params?.itemId) {
             setItemId(route.params.itemId);
@@ -141,6 +141,13 @@ const P2: React.FC = () => {
             });
         }
     }, [itemId, mqttClient]);
+    const [mapKey, setMapKey] = useState(0);    // temp key for map rerendering
+    const [mapRegion, setMapRegion] = useState({
+        latitude: 37.8695,
+        longitude: 127.7430,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+    });
 
     // 위치 권한 요청 함수
     const requestLocationPermission = async () => {
@@ -165,8 +172,13 @@ const P2: React.FC = () => {
 
     useFocusEffect(
         React.useCallback(() => {
-            if (route.params?.items) {
-                // setItems(route.params.items);
+            console.log('Navigated back. Route params:', route.params?.items);
+
+            if (Array.isArray(route.params?.items)) {
+                setItems([...route.params.items]); // 새로운 배열로 설정
+                updateMapRegion(route.params.items); // 지도 중심 업데이트
+            } else {
+                setItems([]); // 빈 배열로 초기화
             }
         }, [route.params?.items])
     );
@@ -189,29 +201,75 @@ const P2: React.FC = () => {
         setCurrentModal("ScarecrowInfo");
     };
 
-    const currentItem = items[currentItemIndex]; // 현재 선택된 말뚝 아이템
+    const currentItem = items.length > 0 ? items[currentItemIndex] : null;
+
+    const updateMapRegion = (items: Item[]) => {
+        if (items.length === 0) return;
+
+        // 모든 마커의 중심을 계산
+        const latitudes = items.map((item) => item.lat);
+        const longitudes = items.map((item) => item.lng);
+        const avgLatitude =
+            latitudes.reduce((sum, lat) => sum + lat, 0) / latitudes.length;
+        const avgLongitude =
+            longitudes.reduce((sum, lng) => sum + lng, 0) / longitudes.length;
+
+        setMapRegion({
+            latitude: avgLatitude,
+            longitude: avgLongitude,
+            latitudeDelta: 0.005, // 적당한 확대 수준 설정
+            longitudeDelta: 0.005,
+        });
+    };
+
+    const handleMarkerPress = (itemId: number) => {
+        const index = items.findIndex((item) => item.id === itemId);
+        if (index !== -1) {
+            setCurrentItemIndex(index); // 선택된 말뚝의 정보를 설정
+            setCurrentModal("ScarecrowInfo"); // ScarecrowInfoModal을 열도록 설정
+        }
+    };
 
     return (
         <View style={styles.container}>
             <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
                 <View style={styles.mapContainer}>
                     <MapView
+                        key={mapKey}
                         style={styles.map}
-                        initialRegion={{
-                            latitude: 37.5665,
-                            longitude: 126.9780,
-                            latitudeDelta: 0.01,
-                            longitudeDelta: 0.01,
-                        }}
+                        mapType="satellite"
+                        region={mapRegion}
                         onMapReady={() => console.log('Map is ready')}
                     >
-                        {items.map((item) => (
-                            <Marker
-                                key={item.id}
-                                coordinate={{ latitude: 37.5665 + item.id * 0.001, longitude: 126.9780 + item.id * 0.001 }}
-                                title={item.name}
-                            />
-                        ))}
+
+                        {/* <Marker
+                    key={9}
+                    coordinate={{
+                        latitude: 37.8697,
+                        longitude: 127.7435,
+                    }}
+                    title="test"
+                /> */}
+
+                        {items.map((item) => {
+                            console.log('Rendering Marker with coordinates:', item.lat, item.lng);
+                            if (typeof item.lat !== 'number' || typeof item.lng !== 'number') {
+                                console.error(`Invalid coordinates for item with id ${item.id}`);
+                                return null; // Marker를 렌더링하지 않음
+                            }
+                            return (
+                                <Marker
+                                    key={item.id} // 동적인 키 생성
+                                    coordinate={{
+                                        latitude: item.lat,
+                                        longitude: item.lng,
+                                    }}
+                                    title={`${item.id}번 말뚝`}
+                                    onPress={() => handleMarkerPress(item.id)}
+                                />
+                            );
+                        })}
+
                     </MapView>
                 </View>
             </TouchableWithoutFeedback>
@@ -224,77 +282,19 @@ const P2: React.FC = () => {
                     onBack={() => setModalVisible(false)} // Modal 닫기
                 />
             )}
-        </View>
-    );
-};
-            {/* {currentModal === "ScarecrowInfo" ? (
+            {currentItem && currentModal === "ScarecrowInfo" && (
                 <ScarecrowInfoModal
                     id={currentItem.id}
                     name={currentItem.name}
                     battery={currentItem.battery}
-                    onArrowClick={handleArrowClick}
+                    // onArrowClick={handleArrowClick}
                     onDetailInfoClick={handleDetailInfoClick}
                 />
-            ) : (
-                <DetectionLogModal
-                    id={currentItem.id}
-                    name={currentItem.name}
-                    logs={[
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        {
-                            time: "2025-01-01 12:00",
-                            target: "사람",
-                            image: "https://example.com/image1.jpg",
-                        },
-                        
-                    ]}
-                    onBack={handleBackToScarecrowInfo}
-                />
-            )} */}
+            )}
+        </View>
+    );
+};
+
 
 const styles = StyleSheet.create({
     container: {
@@ -315,18 +315,18 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         maxHeight: '40%', // 로그 표시 높이 제한
-      },
-      infoText: {
+    },
+    infoText: {
         fontSize: 16,
         marginBottom: 6,
-      },
-      logItem: {
+    },
+    logItem: {
         paddingVertical: 4,
-      },
-      logText: {
+    },
+    logText: {
         fontSize: 14,
         color: '#333',
-      },
+    },
 });
 
 export default P2;
