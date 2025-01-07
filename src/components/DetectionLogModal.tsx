@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#FFA500',
+        backgroundColor: '#c3e8c9',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 20,
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: '#000',
+        color: '#2C9E3E',
     },
     battery: {
         fontSize: 28,
@@ -82,11 +82,11 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 10,
         borderRadius: 10,
-        backgroundColor: '#E7E7E7'
+        backgroundColor: '#fff'
     },
     warning: {
         fontSize: 28,
-        color: '#FF0000',
+        color: '#37B34A',
         fontWeight: 'bold',
     },
     time: {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     },
     logTime: {
         fontSize: 18,
-        color: '#FF0000',
+        color: '#37B34A',
         fontWeight: 'bold',
     },
     logTarget: {

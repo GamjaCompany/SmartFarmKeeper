@@ -102,7 +102,7 @@ const P1: React.FC = () => {
 
     const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => (
         <TouchableOpacity
-            style={[styles.card, { backgroundColor: isActive ? '#f0f0f0' : '#fff' },]} // 드래그 중인 항목 스타일
+            style={[styles.card, { backgroundColor: isActive ? 'rgba(55, 179, 74, 0.1)' : 'rgba(55, 179, 74, 0.3)' },]} // 드래그 중인 항목 스타일
             onLongPress={drag}
             delayLongPress={500}
             // 탭(싱글/더블) 처리
@@ -449,7 +449,7 @@ const P1: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#3d3d3d',
+        backgroundColor: '#fff',
         padding: 20,
     },
     scrollView: {
@@ -464,15 +464,15 @@ const styles = StyleSheet.create({
         height: 150,
         marginBottom: 10,
         borderWidth: 4,
-        borderColor: '#18d',
+        borderColor: 'rgba(55, 179, 74, 0.7)',
         borderRadius: 45,
-        backgroundColor: '#fff',
+        backgroundColor: 'rgba(55, 179, 74, 0.3)',
     },
     cardTitle: {
         fontSize: 30,
         fontWeight: 'bold',
         marginLeft: 10,
-        color: '#000',
+        color: '#37B34A',
     },
     statusContainer: {
         flexDirection: 'row',
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         marginRight: 10,
-        color: '#000',
+        color: '#37B34A',
     },
     statusDot: {
         width: 20,

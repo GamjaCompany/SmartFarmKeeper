@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
         height: 150,
         marginBottom: 10,
         borderWidth: 4,
-        borderColor: '#18d',
+        borderColor: '#37B34A',
         borderRadius: 45,
         backgroundColor: '#fff',
     },
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontWeight: 'bold',
         marginLeft: 10,
-        color: '#000',
+        color: '#37B34A',
     },
     statusContainer: {
         flexDirection: 'row',
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         marginRight: 10,
-        color: '#000',
+        color: '#37B34A',
     },
     statusDot: {
         width: 20,
