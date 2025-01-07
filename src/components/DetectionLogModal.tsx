@@ -1,8 +1,9 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
+import React, {useEffect, useState} from "react";
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions } from "react-native";
 
 interface DetectionLog {
     time: string;
+    // timeStamp?: string;
     target: string;
     image: string;
 }
@@ -10,43 +11,61 @@ interface DetectionLog {
 interface DetectionLogModalProps {
     id: number;
     name: string;
+    battery: string;
     logs: DetectionLog[];
     onBack: () => void;
 }
 
-const DetectionLogModal: React.FC<DetectionLogModalProps> = ({ id, name, logs, onBack }) => {
+const DetectionLogModal: React.FC<DetectionLogModalProps> = ({ id, name, battery, logs, onBack }) => {
     const batteryLevel = 92; // 예시 값
+    const [isExpanded, setIsExpanded] = useState(true); // 로그 표시 여부 상태
+
+    useEffect(() => {
+        console.log("Logs received in DetectionLogModal:", logs);
+    }, [logs]);
+
+    // 동적으로 카드 높이를 계산
+    const calculateCardHeight = () => {
+        const baseHeight = isExpanded ? 230 : -230; // 기본 높이
+        const additionalHeight = logs.length * 90; // 로그 한 개당 높이 증가량
+        console.log(logs.length)
+        const maxHeight = Dimensions.get("window").height * 0.80; // 최대 높이
+        return Math.min(baseHeight + additionalHeight, maxHeight);
+    };
 
     return (
-        <View style={styles.card}>
-            {/* 말뚝 정보 */}
-            <View style={styles.header}>
-                <Text style={styles.title}>{name}</Text>
-                <Text style={styles.battery}>🔋 {batteryLevel}%</Text>
-            </View>
-            <View style={styles.latestDetection}>
-                <Text style={styles.warning}>⚠️ 최근 탐지 시기</Text>
-                <Text style={styles.time}>{logs[0]?.time || "탐지 기록 없음"}</Text>
-            </View>
-
-            {/* 탐지 로그 리스트 */}
+        <View style={[styles.card, { height: calculateCardHeight() }]}>
+          <View style={styles.header}>
+            <Text style={styles.title}>{name}</Text>
+            <Text style={styles.battery}>🔋 {battery}%</Text>
+          </View>
+    
+          {/* 최근 탐지 시기 버튼 */}
+          <TouchableOpacity
+            style={styles.latestDetection}
+            onPress={() => setIsExpanded(!isExpanded)} // 버튼 클릭 시 표시 상태 변경
+          >
+            <Text style={styles.warning}>⚠️ 최근 탐지 시기</Text>
+            <Text style={styles.time}>{logs[0]?.time || "탐지 기록 없음"}</Text>
+          </TouchableOpacity>
+    
+          {/* 로그 표시 (확장 상태일 때만 표시) */}
+          {isExpanded && (
             <ScrollView style={styles.logs}>
-                {logs.map((log, index) => (
-                    <View key={index} style={styles.logItem}>
-                        <Image source={{ uri: log.image }} style={styles.logImage} />
-                        <View style={styles.logTextContainer}>
-                            <Text style={styles.logTime}>⚠️ {log.time}</Text>
-                            <Text style={styles.logTarget}>탐지 대상: {log.target}</Text>
-                        </View>
-                    </View>
-                ))}
+              {logs.map((log, index) => (
+                <View key={index} style={styles.logItem}>
+                  <Image source={{ uri: log.image }} style={styles.logImage} />
+                  <View style={styles.logTextContainer}>
+                    <Text style={styles.logTime}>⚠️ {log.time}</Text>
+                    <Text style={styles.logTarget}>탐지 대상: {log.target}</Text>
+                  </View>
+                </View>
+              ))}
             </ScrollView>
-            <TouchableOpacity style={styles.backButton} onPress={onBack}>
-                <Text style={styles.backButtonText}>← 뒤로가기</Text>
-            </TouchableOpacity>
+          )}
         </View>
-    );
-};
+      );
+    };
 
 const styles = StyleSheet.create({
     card: {
@@ -58,7 +77,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 20,
-        height: '50%', // 카드 크기 조정
+        height: '85%', // 카드 크기 조정
     },
     header: {
         flexDirection: 'row',
@@ -127,18 +146,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#000',
     },
-    backButton: {
-        backgroundColor: "#007bff",
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        alignSelf: "flex-start",
-        marginBottom: 16,
-    },
-    backButtonText: {
-        color: "#ffffff",
+    logTimeStamp: {
         fontSize: 16,
-        fontWeight: "bold",
+        color: '#555',
+        marginTop: 4,
     },
 });
 
