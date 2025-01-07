@@ -5,6 +5,7 @@ import ScarecrowInfoModal from '../components/ScarecrowInfoModal';
 import DetectionLogModal from '../components/DetectionLogModal';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import mqtt from 'mqtt';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Item {
     id: number;
@@ -32,12 +33,6 @@ type RouteParams = {
 };
 
 const P2: React.FC = () => {
-    // const [items, setItems] = useState<Item[]>([
-    //     { id: 1, name: '1번 말뚝', status: '정상' },
-    //     { id: 2, name: '2번 말뚝', status: '고장' },
-    //     { id: 3, name: '3번 말뚝', status: '고장' },
-    //     { id: 4, name: '4번 말뚝', status: '꺼짐' },
-    // ]);
     const route = useRoute<RouteProp<RouteParams, 'params'>>();
     const [items, setItems] = useState<Item[]>(route.params?.items || []);
     const [currentModal, setCurrentModal] = useState<"ScarecrowInfo" | "DetectionLog">("ScarecrowInfo");
@@ -47,7 +42,14 @@ const P2: React.FC = () => {
     const [itemId, setItemId] = useState<number | null>(null);
     const [mqttClient, setMqttClient] = useState<mqtt.MqttClient | null>(null);
     const [battery, setBattery] = useState<string>('??');
-    // const [items, setItems] = useState<Item[]>(route.params?.items || []);
+    const [mapKey, setMapKey] = useState(0);    // temp key for map rerendering
+    const [mapRegion, setMapRegion] = useState({
+        latitude: 37.8695,
+        longitude: 127.7430,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+    });
+
 
     useEffect(() => {
         if (route.params?.logs) {
@@ -141,13 +143,16 @@ const P2: React.FC = () => {
             });
         }
     }, [itemId, mqttClient]);
-    const [mapKey, setMapKey] = useState(0);    // temp key for map rerendering
-    const [mapRegion, setMapRegion] = useState({
-        latitude: 37.8695,
-        longitude: 127.7430,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-    });
+
+    const loadItemsFromStorage = async () => {
+        try {
+            const jsonValue = await AsyncStorage.getItem('@piling_items');
+            return jsonValue != null ? JSON.parse(jsonValue) : [];
+        } catch (e) {
+            console.error('Failed to load items from storage:', e);
+            return [];
+        }
+    };
 
     // 위치 권한 요청 함수
     const requestLocationPermission = async () => {
@@ -172,7 +177,7 @@ const P2: React.FC = () => {
 
     useFocusEffect(
         React.useCallback(() => {
-            console.log('Navigated back. Route params:', route.params?.items);
+            // console.log('Navigated back. Route params:', route.params?.items);
 
             if (Array.isArray(route.params?.items)) {
                 setItems([...route.params.items]); // 새로운 배열로 설정
@@ -180,18 +185,25 @@ const P2: React.FC = () => {
             } else {
                 setItems([]); // 빈 배열로 초기화
             }
+
+            setCurrentItemIndex(0); // 초기화
+            setMapKey((prevKey) => prevKey + 1); // 지도 강제 재랜더링
         }, [route.params?.items])
     );
 
-    const handleArrowClick = (direction: 'left' | 'right') => {
-        setCurrentItemIndex((prevIndex) => {
-            if (direction === 'left') {
-                return prevIndex === 0 ? items.length - 1 : prevIndex - 1;
-            } else {
-                return prevIndex === items.length - 1 ? 0 : prevIndex + 1;
+    useEffect(() => {
+        const fetchItems = async () => {
+            try {
+                const storedItems = await loadItemsFromStorage();
+                setItems(storedItems);
+                updateMapRegion(storedItems); // 지도 중심 업데이트
+            } catch (error) {
+                console.error('Error loading items from storage:', error);
             }
-        });
-    };
+        };
+
+        fetchItems()
+    }, []);
 
     const handleDetailInfoClick = () => {
         setCurrentModal("DetectionLog");
@@ -204,7 +216,10 @@ const P2: React.FC = () => {
     const currentItem = items.length > 0 ? items[currentItemIndex] : null;
 
     const updateMapRegion = (items: Item[]) => {
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            console.log("Not have Items")
+            return;
+        }
 
         // 모든 마커의 중심을 계산
         const latitudes = items.map((item) => item.lat);
@@ -225,10 +240,15 @@ const P2: React.FC = () => {
     const handleMarkerPress = (itemId: number) => {
         const index = items.findIndex((item) => item.id === itemId);
         if (index !== -1) {
-            setCurrentItemIndex(index); // 선택된 말뚝의 정보를 설정
-            setCurrentModal("ScarecrowInfo"); // ScarecrowInfoModal을 열도록 설정
+            setCurrentItemIndex(index); // 선택된 말뚝의 인덱스를 설정
+            setModalVisible(true);
+            setItemId(itemId);  // index가 아닌 실제 itemId 설정
+            setBattery(items[index].battery);
+        } else {
+            console.error(`Item with id ${itemId} not found`);
         }
     };
+    
 
     return (
         <View style={styles.container}>
@@ -271,26 +291,26 @@ const P2: React.FC = () => {
                         })}
 
                     </MapView>
+                    {modalVisible && (
+                        <DetectionLogModal
+                            id={itemId || 0}
+                            name={`${itemId || 0}번 말뚝`}
+                            battery={battery}
+                            logs={logs}
+                            onBack={() => setModalVisible(false)} // Modal 닫기
+                        />
+                    )}
+                    {/* {currentItem && currentModal === "ScarecrowInfo" && (
+                        <ScarecrowInfoModal
+                            id={currentItem.id}
+                            name={currentItem.name}
+                            battery={currentItem.battery}
+                            // onArrowClick={handleArrowClick}
+                            onDetailInfoClick={handleDetailInfoClick}
+                        />
+                    )} */}
                 </View>
             </TouchableWithoutFeedback>
-            {modalVisible && (
-                <DetectionLogModal
-                    id={itemId || 0}
-                    name={`${itemId || 0}번 말뚝`}
-                    battery={battery}
-                    logs={logs}
-                    onBack={() => setModalVisible(false)} // Modal 닫기
-                />
-            )}
-            {currentItem && currentModal === "ScarecrowInfo" && (
-                <ScarecrowInfoModal
-                    id={currentItem.id}
-                    name={currentItem.name}
-                    battery={currentItem.battery}
-                    // onArrowClick={handleArrowClick}
-                    onDetailInfoClick={handleDetailInfoClick}
-                />
-            )}
         </View>
     );
 };

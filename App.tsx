@@ -18,7 +18,7 @@ const App: React.FC = () => {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <NavigationContainer>
                 <Tab.Navigator
-                    initialRouteName="P2"
+                    initialRouteName="P1"
                     screenOptions={{
                         headerShown: false, // 상단 헤더 숨김
                         tabBarStyle: { backgroundColor: '#f8f9fa', height: 60 }, // 하단 바 스타일

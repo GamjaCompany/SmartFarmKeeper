@@ -9,6 +9,7 @@ import { Notifications } from 'react-native-notifications';
 import Toast from 'react-native-toast-message';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 
+
 import DetectionLogModal from '../components/DetectionLogModal';
 
 const DOUBLE_TAP_INTERVAL = 300;
@@ -45,7 +46,7 @@ const dummyLogs: Record<number, DetectionLog[]> = {
 
 interface StackParamList extends ParamListBase {
     P1: undefined;
-    P2: undefined;
+    P2: { items?: Item[]; }
 };
 
 type P1ScreenNavigationProp = StackNavigationProp<StackParamList, 'P1'>;
@@ -70,6 +71,19 @@ const P1: React.FC = () => {
     const [logModalVisible, setLogModalVisible] = useState(false);
     const [selectedLogs, setSelectedLogs] = useState<DetectionLog[]>([]);
 
+    const hasNavigated = useRef(false); // 최초 이동 여부 추적
+
+    // useEffect(() => {
+    //     if (!hasNavigated.current) {
+    //         hasNavigated.current = true; // 최초 이동 플래그 설정
+    //         const timer = setTimeout(() => {
+    //             navigation.navigate('P2'); // P2로 이동
+    //         }, 2000);
+
+    //         return () => clearTimeout(timer); // 타이머 정리
+    //     }
+    // }, [navigation]);
+
     // const generateClientId = (): string => {
     //     const chars = '0123456789';
     //     return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -84,14 +98,14 @@ const P1: React.FC = () => {
         try {
             const updatedItems = items.filter((item) => item.id !== id); // 삭제된 항목 제외
             setItems(updatedItems); // 상태 업데이트
-            
+
             // 삭제된 idx를 저장
             setDeletedItems((prev) => [...prev, id]);
-    
+
             // 비동기 스토리지 업데이트 후 numDevices 업데이트
             await saveItemToStorage(updatedItems);
             console.log('Current items in storage after deletion:', updatedItems);
-    
+
             // numDevices 상태 업데이트
             SetNumDevices(updatedItems.length); // updatedItems 배열의 길이 사용
         } catch (error) {
@@ -127,11 +141,11 @@ const P1: React.FC = () => {
             setTimeout(() => {
                 if (lastTapRef.current && Date.now() - lastTapRef.current >= DOUBLE_TAP_INTERVAL) {
                     console.log('Single tap detected for item:', item.id);
-    
+
                     if (mqttClient) {
                         const topic = 'GET';
                         const message = JSON.stringify({ idx: item.id });
-    
+
                         mqttClient.publish(topic, message, (error) => {
                             if (error) {
                                 console.error('Error publishing MQTT message:', error);
@@ -142,12 +156,12 @@ const P1: React.FC = () => {
                     } else {
                         console.error('MQTT client is not connected');
                     }
-    
+
                     navigation.navigate('P2', {
                         itemId: item.id,
                         battery: item.battery, // P2로 id와 배터리를 전달
                     });
-    
+
                     lastTapRef.current = null;
                 }
             }, DOUBLE_TAP_INTERVAL);
@@ -164,7 +178,7 @@ const P1: React.FC = () => {
         >
             <Text style={styles.cardTitle}>{item.id}번 말뚝</Text>
             <View style={styles.statusContainer}>
-                <View style={[styles.statusDot, { backgroundColor: item.statusDot }]}/>
+                <View style={[styles.statusDot, { backgroundColor: item.statusDot }]} />
                 <Text style={styles.statusText}>{item.status}</Text>
             </View>
         </TouchableOpacity>
@@ -202,26 +216,26 @@ const P1: React.FC = () => {
             }
         };
 
-        fetchItems();
+        fetchItems()
     }, []);
 
     useEffect(() => {
         // items와 deletedItems 상태를 최신 상태로 동기화
         setDeletedItems((prev) =>
-          prev.filter((id) => !items.some((item) => item.id === id))
+            prev.filter((id) => !items.some((item) => item.id === id))
         );
-      }, [items]);
+    }, [items]);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-          console.log('현재 items 리스트:', items);
+            console.log('현재 items 리스트:', items);
         }, 5000);
-    
+
         // 언마운트되거나 items 변경으로 useEffect 재실행 시 interval 정리
         return () => {
-          clearInterval(intervalId);
+            clearInterval(intervalId);
         };
-      }, [items]); 
+    }, [items]);
 
     // useEffect(() => {
     //         AsyncStorage.clear()
@@ -352,16 +366,16 @@ const P1: React.FC = () => {
                                 )
                             );
                         }
-                        else if(cmd === "alert"){
+                        else if (cmd === "alert") {
                             console.log("alert");
 
                             Notifications.postLocalNotification({
-                                title : "움직임 감지",
+                                title: "움직임 감지",
                                 body: `${idx}번 말뚝에서 움직임이 감지되었습니다.`,
                                 identifier: `alert-${idx}`, // 알림의 고유 ID (필수 아님, 하지만 권장)
                                 payload: { idx },           // 알림과 함께 전달할 데이터 (필수 아님)
                                 sound: "default",           // 알림 사운드 (기본값: default)
-                                badge: 1,  
+                                badge: 1,
                                 type: "default",                                // 알림 유형 (필수)
                                 thread: `thread-${idx}`,                        // 알림 스레드 (필수)
                             });
@@ -415,7 +429,7 @@ const P1: React.FC = () => {
                 activationDistance={10} // 드래그 민감도 설정
             />
             {isContextMenuVisible && (
-            <TouchableWithoutFeedback onPress={() => setIsContextMenuVisible(false)}>
+                <TouchableWithoutFeedback onPress={() => setIsContextMenuVisible(false)}>
                     <View style={[styles.contextMenuOverlay, { zIndex: 10 }]}>
                         {/* 여기는 '배경' 영역. 실제 클릭하면 메뉴를 닫음 */}
                         <TouchableWithoutFeedback onPress={() => { /* 여기서는 닫히지 않음 */ }}>
@@ -677,7 +691,7 @@ const styles = StyleSheet.create({
         left: 20, // 좌측 여백
         right: 20, // 우측 여백
         alignItems: 'center',
-    }  
+    }
 });
 
 export default P1;
