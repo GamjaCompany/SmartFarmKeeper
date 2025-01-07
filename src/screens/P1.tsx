@@ -9,6 +9,8 @@ import { Notifications } from 'react-native-notifications';
 import Toast from 'react-native-toast-message';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 
+import DetectionLogModal from '../components/DetectionLogModal';
+
 const DOUBLE_TAP_INTERVAL = 300;
 
 interface Item {
@@ -18,6 +20,26 @@ interface Item {
     statusDot: string;
     battery: string;
 }
+
+// 예시: 말뚝 별로 미리 정의된(또는 서버에서 가져올) 탐지 로그
+interface DetectionLog {
+    time: string;
+    target: string;
+    image: string;
+}
+
+// 말뚝 id => 해당 말뚝의 로그 목록(가짜 데이터) 라고 가정
+const dummyLogs: Record<number, DetectionLog[]> = {
+    1: [
+        { time: '2025-01-01 12:00', target: '사람', image: 'https://example.com/image1.jpg' },
+        { time: '2025-01-01 13:34', target: '고라니', image: 'https://example.com/image2.jpg' },
+    ],
+    2: [
+        { time: '2025-01-02 08:00', target: '사람', image: 'https://example.com/image3.jpg' },
+    ],
+    // ...
+    // id가 더 있다면 여기에 추가
+};
 
 interface StackParamList extends ParamListBase {
     P1: undefined;
@@ -38,8 +60,13 @@ const P1: React.FC = () => {
     const [isContextMenuVisible, setIsContextMenuVisible] = useState(false); // 컨텍스트 메뉴 표시 여부
     const navigation = useNavigation<P1ScreenNavigationProp>();
     const [message, setMessage] = useState('');
+    const [mqttClient, setMqttClient] = useState<mqtt.MqttClient | null>(null);
     const lastTapRef = useRef<number | null>(null);
     const [deletedItems, setDeletedItems] = useState<number[]>([]);
+    const [lastPrevList, setLastPrevList] = useState<DetectionLog[]>([]);
+
+    const [logModalVisible, setLogModalVisible] = useState(false);
+    const [selectedLogs, setSelectedLogs] = useState<DetectionLog[]>([]);
 
     // const generateClientId = (): string => {
     //     const chars = '0123456789';
@@ -77,26 +104,53 @@ const P1: React.FC = () => {
         setIsContextMenuVisible(true); // 컨텍스트 메뉴 열기
     };
 
+    // ★ 탐지 로그 모달을 열기 위한 함수 (Single Tap 시 호출)
+    const showLogModal = (pileId: number) => {
+        // 만약 실제 서버에서 가져온다면, 여기서 fetch 호출 or mqtt 통신 후 setSelectedLogs()
+        // 지금은 dummyLogs 에서 가져옴
+        const logs = dummyLogs[pileId] || [];
+        setSelectedLogs(logs);
+        setLogModalVisible(true);
+    };
+
     const handleTap = (item: Item) => {
         const now = Date.now();
         if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_INTERVAL) {
-          // 더블 탭인 경우 → 컨텍스트 메뉴 표시
-          lastTapRef.current = null;
-          setSelectedItem(item);
-          setIsContextMenuVisible(true);
+            // 더블 탭인 경우 → 컨텍스트 메뉴 표시
+            lastTapRef.current = null;
+            setSelectedItem(item);
+            setIsContextMenuVisible(true);
         } else {
-          // 첫 번째 탭a
-          lastTapRef.current = now;
-          setTimeout(() => {
-            // 탭 간격 내에 두 번째 탭이 없으면 싱글 탭
-            if (lastTapRef.current && Date.now() - lastTapRef.current >= DOUBLE_TAP_INTERVAL) {
-              // 싱글 탭 로직 (원한다면 여기에 작성)
-              // 예: console.log(`싱글 탭: ${item.name}`);
-              lastTapRef.current = null;
-            }
-          }, DOUBLE_TAP_INTERVAL);
+            lastTapRef.current = now;
+            setTimeout(() => {
+                if (lastTapRef.current && Date.now() - lastTapRef.current >= DOUBLE_TAP_INTERVAL) {
+                    console.log('Single tap detected for item:', item.id);
+    
+                    if (mqttClient) {
+                        const topic = 'GET';
+                        const message = JSON.stringify({ idx: item.id });
+    
+                        mqttClient.publish(topic, message, (error) => {
+                            if (error) {
+                                console.error('Error publishing MQTT message:', error);
+                            } else {
+                                console.log(`Message sent to topic '${topic}': ${message}`);
+                            }
+                        });
+                    } else {
+                        console.error('MQTT client is not connected');
+                    }
+    
+                    navigation.navigate('P2', {
+                        itemId: item.id,
+                        battery: item.battery, // P2로 id와 배터리를 전달
+                    });
+    
+                    lastTapRef.current = null;
+                }
+            }, DOUBLE_TAP_INTERVAL);
         }
-      };
+    };
 
     const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => (
         <TouchableOpacity
@@ -255,6 +309,7 @@ const P1: React.FC = () => {
 
             client.on('connect', () => {
                 console.log('MQTT Connected');
+                setMqttClient(client);
 
                 client.subscribe('Notify', (err) => {
                     if (err) {
@@ -273,13 +328,27 @@ const P1: React.FC = () => {
                 });
             });
 
-            // initializeClientId(client);   // init Client ID
-
-            // loadItemsFromStorage()
-
             client.on('message', (topic, message) => {
-                console.log(`Received message from topic ${topic}: ${message.toString()}`);
-                setMqttMessage(message.toString());
+                // console.log(`Received message from topic ${topic}: ${message.toString()}`);
+                const parsed = JSON.parse(message.toString());
+
+                try {
+                    // prev_list가 존재하면 추출
+                    if (parsed.prev_list) {
+                        // prev_list만 문자열로 변환해 저장
+                        const listStr = JSON.stringify(parsed.prev_list, null, 2);
+                        // console.log("HELLO"+listStr);
+                    } else {
+                        // prev_list가 없다면 기존 로직
+                        setMqttMessage(message.toString());
+                    }
+
+                } catch (err) {
+                    console.error('JSON parse error:', err);
+                    // parse 실패하면 그냥 메시지 그대로 저장
+                    setMqttMessage(message.toString());
+                }
+
 
                 if (topic === 'Notify') {
                     try {
@@ -479,6 +548,15 @@ const P1: React.FC = () => {
                     </View>
                 </View>
             )}
+            {/* 탐지 로그 모달 (Single Tap 시 표시)
+            {logModalVisible && (
+                <DetectionLogModal
+                    id={selectedItem?.id || 0}
+                    name={selectedItem?.name || '말뚝'}
+                    logs={selectedLogs}
+                    onBack={() => setLogModalVisible(false)}
+                />
+            )} */}
             {/* <ScrollView contentContainerStyle={styles.scrollView}>
                 {items.map((item) => (
                     // <Scarecrow key={item.id} id={item.id} name={item.name} status={item.status}/>
@@ -494,14 +572,14 @@ const P1: React.FC = () => {
             {/* <View style={styles.mqttContainer}>
                 <Text style={styles.mqttText}>{mqttMessage}</Text>
             </View> */}
-            <View style={styles.showanalysis}>
+            {/* <View style={styles.showanalysis}>
                 <TouchableOpacity style={styles.button} onPress={() => {
                     console.log("click!");
                     navigation.navigate('P2', { items });
                 }}>
                     <Text style={styles.buttonText}>분석 보기</Text>
                 </TouchableOpacity>
-            </View>
+            </View> */}
         </View>
     );
 };
