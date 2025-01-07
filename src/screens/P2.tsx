@@ -19,16 +19,9 @@ type RouteParams = {
 };
 
 const P2: React.FC = () => {
-    // const [items, setItems] = useState<Item[]>([
-    //     { id: 1, name: '1번 말뚝', status: '정상' },
-    //     { id: 2, name: '2번 말뚝', status: '고장' },
-    //     { id: 3, name: '3번 말뚝', status: '고장' },
-    //     { id: 4, name: '4번 말뚝', status: '꺼짐' },
-    // ]);
     const route = useRoute<RouteProp<RouteParams, 'params'>>();
     const [items, setItems] = useState<Item[]>(route.params?.items || []);
     const [currentModal, setCurrentModal] = useState<"ScarecrowInfo" | "DetectionLog">("ScarecrowInfo");
-
     const [currentItemIndex, setCurrentItemIndex] = useState<number>(0);
 
     // 위치 권한 요청 함수
@@ -99,7 +92,10 @@ const P2: React.FC = () => {
                 {items.map((item) => (
                     <Marker
                         key={item.id}
-                        coordinate={{ latitude: 37.5665 + item.id * 0.001, longitude: 126.9780 + item.id * 0.001 }}
+                        coordinate={{
+                            latitude: 37.5665 + item.id * 0.001,
+                            longitude: 126.9780 + item.id * 0.001,
+                        }}
                         title={item.name}
                     />
                 ))}
